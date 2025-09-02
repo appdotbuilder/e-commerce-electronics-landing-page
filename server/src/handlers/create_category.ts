@@ -1,16 +1,34 @@
+import { db } from '../db';
+import { categoriesTable } from '../db/schema';
 import { type CreateCategoryInput, type Category } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export async function createCategory(input: CreateCategoryInput): Promise<Category> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new product category
-    // for organizing electronics (e.g., Smartphones, Laptops, Audio, Gaming).
-    // Should validate slug uniqueness and handle URL-friendly slug creation.
-    return {
-        id: 0, // Placeholder ID
+export const createCategory = async (input: CreateCategoryInput): Promise<Category> => {
+  try {
+    // Check if slug already exists
+    const existingCategory = await db.select()
+      .from(categoriesTable)
+      .where(eq(categoriesTable.slug, input.slug))
+      .execute();
+
+    if (existingCategory.length > 0) {
+      throw new Error(`Category with slug '${input.slug}' already exists`);
+    }
+
+    // Insert category record
+    const result = await db.insert(categoriesTable)
+      .values({
         name: input.name,
-        description: input.description || null,
+        description: input.description,
         slug: input.slug,
-        image_url: input.image_url || null,
-        created_at: new Date()
-    } as Category;
-}
+        image_url: input.image_url
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Category creation failed:', error);
+    throw error;
+  }
+};

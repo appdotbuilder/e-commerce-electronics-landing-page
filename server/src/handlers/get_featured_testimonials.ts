@@ -1,9 +1,21 @@
+import { db } from '../db';
+import { testimonialsTable } from '../db/schema';
 import { type Testimonial } from '../schema';
+import { eq, desc } from 'drizzle-orm';
 
-export async function getFeaturedTestimonials(): Promise<Testimonial[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching featured customer testimonials/reviews
-    // for display in the testimonials section of the landing page.
-    // Should filter by is_featured = true and order by rating desc or created_at desc.
-    return [];
-}
+export const getFeaturedTestimonials = async (): Promise<Testimonial[]> => {
+  try {
+    // Query featured testimonials ordered by rating desc, then created_at desc
+    const results = await db.select()
+      .from(testimonialsTable)
+      .where(eq(testimonialsTable.is_featured, true))
+      .orderBy(desc(testimonialsTable.rating), desc(testimonialsTable.created_at))
+      .execute();
+
+    // Return results (no numeric conversions needed for testimonials)
+    return results;
+  } catch (error) {
+    console.error('Featured testimonials fetch failed:', error);
+    throw error;
+  }
+};

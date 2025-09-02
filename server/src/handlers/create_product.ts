@@ -1,21 +1,34 @@
+import { db } from '../db';
+import { productsTable } from '../db/schema';
 import { type CreateProductInput, type Product } from '../schema';
 
-export async function createProduct(input: CreateProductInput): Promise<Product> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new electronic product and persisting it in the database.
-    // This is for admin functionality to add new products to the electronics catalog.
-    return {
-        id: 0, // Placeholder ID
+export const createProduct = async (input: CreateProductInput): Promise<Product> => {
+  try {
+    // Insert product record
+    const result = await db.insert(productsTable)
+      .values({
         name: input.name,
         description: input.description,
-        price: input.price,
-        original_price: input.original_price || null,
+        price: input.price.toString(), // Convert number to string for numeric column
+        original_price: input.original_price?.toString() || null, // Handle nullable field
         image_url: input.image_url,
         category: input.category,
-        is_featured: input.is_featured || false,
-        is_new: input.is_new || false,
-        stock_quantity: input.stock_quantity,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Product;
-}
+        is_featured: input.is_featured || false, // Apply Zod default
+        is_new: input.is_new || false, // Apply Zod default
+        stock_quantity: input.stock_quantity // Integer column - no conversion needed
+      })
+      .returning()
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    const product = result[0];
+    return {
+      ...product,
+      price: parseFloat(product.price), // Convert string back to number
+      original_price: product.original_price ? parseFloat(product.original_price) : null // Handle nullable field
+    };
+  } catch (error) {
+    console.error('Product creation failed:', error);
+    throw error;
+  }
+};

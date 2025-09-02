@@ -1,9 +1,23 @@
+import { db } from '../db';
+import { categoriesTable } from '../db/schema';
 import { type Category } from '../schema';
+import { asc } from 'drizzle-orm';
 
-export async function getCategories(): Promise<Category[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all product categories
-    // for navigation and filtering electronics by type (smartphones, laptops, etc.).
-    // Should order by name or creation date for consistent display.
-    return [];
-}
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    // Fetch all categories ordered by name for consistent display
+    const results = await db.select()
+      .from(categoriesTable)
+      .orderBy(asc(categoriesTable.name))
+      .execute();
+
+    // Return categories with proper date conversion
+    return results.map(category => ({
+      ...category,
+      created_at: new Date(category.created_at)
+    }));
+  } catch (error) {
+    console.error('Failed to fetch categories:', error);
+    throw error;
+  }
+};
